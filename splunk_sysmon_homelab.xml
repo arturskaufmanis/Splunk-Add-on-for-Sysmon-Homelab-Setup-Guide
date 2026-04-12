@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  Homelab Documentation: Splunk Add-on for Sysmon
+  Format:    Structured XML
+  Version:   1.0
+  Date:      April 2026
+  Status:    Completed Successfully
+  ============================================================
+-->
+<homelabDocument>
+
+  <metadata>
+    <title>Installing Splunk Add-on for Sysmon on Splunk Free Edition</title>
+    <date>April 2026</date>
+    <version>1.0</version>
+    <status>Completed Successfully</status>
+    <addonVersion>5.0.0</addonVersion>
+    <author>Homelab Project</author>
+    <purpose>
+      Set up proper ingestion and parsing of Sysmon logs from Windows Server 2025
+      into Splunk Free using the Universal Forwarder and the official Splunk Add-on
+      for Sysmon (v5.0.0).
+    </purpose>
+  </metadata>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1: Environment Overview                              -->
+  <!-- ============================================================ -->
+  <section id="1" title="Environment Overview">
+    <environment>
+      <component name="targetServer">
+        <value>Windows Server 2025</value>
+      </component>
+      <component name="sysmon">
+        <value>Installed and running in Smart Mode (low noise configuration)</value>
+      </component>
+      <component name="splunkUniversalForwarder">
+        <value>Installed on Windows Server 2025</value>
+      </component>
+      <component name="splunkInstance">
+        <value>Splunk Free Edition (single-instance setup)</value>
+      </component>
+      <component name="index">
+        <value>wineventlog</value>
+      </component>
+      <component name="sysmonInputConfig">
+        <value>Already added with renderXml = true</value>
+      </component>
+    </environment>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2: Status Before Installation                        -->
+  <!-- ============================================================ -->
+  <section id="2" title="Status Before Add-on Installation">
+    <statusItems>
+      <statusItem resolved="true">
+        <description>Sysmon events were being collected via the Universal Forwarder.</description>
+      </statusItem>
+      <statusItem resolved="false">
+        <description>Events arriving in Splunk showing as generic sourcetype (xmlwineventlog).</description>
+      </statusItem>
+      <statusItem resolved="false">
+        <description>No proper field extractions: Image, CommandLine, ParentImage, hashes, etc.</description>
+        <missingFields>
+          <field>Image</field>
+          <field>CommandLine</field>
+          <field>ParentImage</field>
+          <field>hashes</field>
+          <field>ProcessId</field>
+          <field>DestinationIp</field>
+        </missingFields>
+      </statusItem>
+      <statusItem resolved="false">
+        <description>Splunk Free UI blocked "Manage Apps" due to missing Auth license feature.</description>
+      </statusItem>
+    </statusItems>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 3: Download and Extraction                           -->
+  <!-- ============================================================ -->
+  <section id="3" title="Download and Extraction Process">
+    <download>
+      <addonName>Splunk Add-on for Microsoft Sysmon</addonName>
+      <addonVersion>5.0.0</addonVersion>
+      <downloadedFile>C:\Tools\Sysmon\splunk-add-on-for-sysmon_500.tgz</downloadedFile>
+      <source>https://splunkbase.splunk.com/app/5709</source>
+    </download>
+
+    <extractionSteps>
+      <step order="1">
+        <description>Extract the .tgz archive</description>
+        <input>splunk-add-on-for-sysmon_500.tgz</input>
+        <output>Splunk_TA_microsoft_sysmon-5.0.0.tar</output>
+        <tool>Windows built-in Extract All or 7-Zip</tool>
+      </step>
+      <step order="2">
+        <description>Extract the .tar archive</description>
+        <input>Splunk_TA_microsoft_sysmon-5.0.0.tar</input>
+        <output>Splunk_TA_microsoft_sysmon-5.0.0\</output>
+        <tool>Windows built-in Extract All or 7-Zip</tool>
+      </step>
+    </extractionSteps>
+
+    <extractedStructure>
+      <folder name="Splunk_TA_microsoft_sysmon-5.0.0">
+        <subfolder name="default" />
+        <subfolder name="metadata" />
+      </folder>
+    </extractedStructure>
+
+    <note>
+      No .exe installer or additional archives are present.
+      This is normal behaviour for Splunk add-ons — they are pure configuration files.
+    </note>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 4: Installation Steps                                -->
+  <!-- ============================================================ -->
+  <section id="4" title="Installation Steps on Splunk Free">
+    <installationSteps>
+
+      <step order="1" required="true">
+        <title>Copy Add-on to Splunk Apps Directory</title>
+        <description>
+          Copy the entire extracted folder to the Splunk apps directory.
+        </description>
+        <sourcePath>Splunk_TA_microsoft_sysmon-5.0.0\</sourcePath>
+        <destinationPath>C:\Program Files\Splunk\etc\apps\</destinationPath>
+        <command type="powershell">
+          Copy-Item -Recurse "Splunk_TA_microsoft_sysmon-5.0.0" "C:\Program Files\Splunk\etc\apps\"
+        </command>
+      </step>
+
+      <step order="2" required="true">
+        <title>Restart Splunk</title>
+        <description>
+          Restart Splunk using PowerShell (Run as Administrator) to load the new add-on.
+        </description>
+        <commands type="powershell">
+          <command>cd "C:\Program Files\Splunk\bin"</command>
+          <command>.\splunk.exe restart</command>
+        </commands>
+        <note>Both PowerShell and Command Prompt work for this step.</note>
+      </step>
+
+      <step order="3" required="false" recommended="true">
+        <title>Install on Universal Forwarder</title>
+        <description>
+          Optionally install the same add-on on the Universal Forwarder
+          for improved local parsing and field extraction at the source.
+        </description>
+        <destinationPath>C:\Program Files\SplunkUniversalForwarder\etc\apps\</destinationPath>
+        <commands type="powershell">
+          <command>Copy-Item -Recurse "Splunk_TA_microsoft_sysmon-5.0.0" "C:\Program Files\SplunkUniversalForwarder\etc\apps\"</command>
+          <command>cd "C:\Program Files\SplunkUniversalForwarder\bin"</command>
+          <command>.\splunk.exe restart</command>
+        </commands>
+      </step>
+
+    </installationSteps>
+
+    <workaroundNote>
+      Splunk Free edition blocks the web-based "Install app from file" because it requires
+      the Auth license feature. Manual folder copy to etc\apps\ followed by a restart
+      is the reliable workaround.
+    </workaroundNote>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5: Verification                                      -->
+  <!-- ============================================================ -->
+  <section id="5" title="Verification">
+    <verificationSteps>
+
+      <step order="1">
+        <title>Confirm Add-on in Splunk Web</title>
+        <description>Open Splunk Web and confirm the add-on appears in the Apps list.</description>
+        <url>http://localhost:8000</url>
+        <expectedResult>Splunk Add-on for Microsoft Sysmon listed under Apps</expectedResult>
+      </step>
+
+      <step order="2">
+        <title>Sourcetype Check Search</title>
+        <description>Run a search to verify the sourcetype has changed correctly.</description>
+        <splQuery><![CDATA[
+index=wineventlog source=*sysmon*
+| stats count by sourcetype source
+        ]]></splQuery>
+        <expectedSourcetype>XmlWinEventLog:Microsoft-Windows-Sysmon/Operational</expectedSourcetype>
+      </step>
+
+      <step order="3">
+        <title>Field Extraction Test</title>
+        <description>Verify that key Sysmon fields are being extracted properly.</description>
+        <splQuery><![CDATA[
+index=wineventlog sourcetype=*sysmon*
+| table _time host EventCode Image CommandLine ParentImage ProcessId hashes DestinationIp
+        ]]></splQuery>
+        <expectedFields>
+          <field>_time</field>
+          <field>host</field>
+          <field>EventCode</field>
+          <field>Image</field>
+          <field>CommandLine</field>
+          <field>ParentImage</field>
+          <field>ProcessId</field>
+          <field>hashes</field>
+          <field>DestinationIp</field>
+        </expectedFields>
+      </step>
+
+    </verificationSteps>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 6: Lessons Learned                                   -->
+  <!-- ============================================================ -->
+  <section id="6" title="Lessons Learned">
+    <lessons>
+      <lesson id="L1">
+        <finding>Splunk Free blocks web-based app installation</finding>
+        <detail>
+          The "Manage Apps → Install app from file" feature in Splunk Free is disabled
+          because it requires the Auth license feature not included in the free tier.
+        </detail>
+        <resolution>Manual folder copy to etc\apps\ and Splunk restart.</resolution>
+      </lesson>
+      <lesson id="L2">
+        <finding>Two-step extraction is required for Splunk add-ons</finding>
+        <detail>The download is a .tgz file which must be extracted twice: .tgz to .tar, then .tar to folder.</detail>
+        <resolution>Use 7-Zip or Windows built-in Extract All for each layer.</resolution>
+      </lesson>
+      <lesson id="L3">
+        <finding>renderXml = true is mandatory</finding>
+        <detail>
+          The renderXml = true setting in the Universal Forwarder's inputs.conf is essential.
+          Without it, the Sysmon add-on cannot properly parse the incoming events.
+        </detail>
+        <resolution>Ensure inputs.conf on the Forwarder includes renderXml = true for the Sysmon input.</resolution>
+      </lesson>
+      <lesson id="L4">
+        <finding>CLI restart is fully supported</finding>
+        <detail>Both PowerShell and Command Prompt work reliably for restarting Splunk and the Universal Forwarder.</detail>
+        <resolution>N/A — either CLI tool works.</resolution>
+      </lesson>
+    </lessons>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 7: Next Steps                                        -->
+  <!-- ============================================================ -->
+  <section id="7" title="Next Steps">
+    <nextSteps>
+      <task priority="high" status="pending">
+        <title>Tune Sysmon Configuration</title>
+        <description>
+          Review and refine the Sysmon config.xml to reduce event noise
+          and stay within Splunk Free's 500 MB/day indexing limit.
+        </description>
+      </task>
+      <task priority="medium" status="pending">
+        <title>Create Dedicated Sysmon Index</title>
+        <description>
+          Create a dedicated index (e.g., sysmon) to separate Sysmon events
+          from other Windows event log data for easier searching and retention management.
+        </description>
+        <splCommand>index=sysmon</splCommand>
+      </task>
+      <task priority="medium" status="pending">
+        <title>Build Sysmon Dashboards</title>
+        <description>
+          Create basic dashboards in Splunk for key Sysmon event codes:
+          Process Creation (1), Network Connections (3), Image Load (7),
+          File Creation (11), DNS Query (22).
+        </description>
+        <eventCodes>
+          <eventCode id="1">Process Creation</eventCode>
+          <eventCode id="3">Network Connection</eventCode>
+          <eventCode id="7">Image Loaded</eventCode>
+          <eventCode id="11">File Created</eventCode>
+          <eventCode id="22">DNS Query</eventCode>
+        </eventCodes>
+      </task>
+      <task priority="low" status="pending">
+        <title>Explore Splunk Security Content</title>
+        <description>
+          Investigate Splunk Security Content detections and analytics
+          that leverage Sysmon data for threat detection use cases.
+        </description>
+        <reference>https://github.com/splunk/security_content</reference>
+      </task>
+    </nextSteps>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- REFERENCES                                                   -->
+  <!-- ============================================================ -->
+  <references>
+    <reference id="R1">
+      <title>Splunk Add-on for Microsoft Sysmon</title>
+      <url>https://splunkbase.splunk.com/app/5709</url>
+    </reference>
+    <reference id="R2">
+      <title>Sysmon — Microsoft Sysinternals</title>
+      <url>https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon</url>
+    </reference>
+    <reference id="R3">
+      <title>Splunk Universal Forwarder Documentation</title>
+      <url>https://docs.splunk.com/Documentation/Forwarder</url>
+    </reference>
+    <reference id="R4">
+      <title>SwiftOnSecurity Sysmon Config (recommended base config)</title>
+      <url>https://github.com/SwiftOnSecurity/sysmon-config</url>
+    </reference>
+  </references>
+
+</homelabDocument>
