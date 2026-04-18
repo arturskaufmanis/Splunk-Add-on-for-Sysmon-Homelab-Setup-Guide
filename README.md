@@ -2,7 +2,7 @@
 
 > **Platform:** Windows Server 2025 · **Splunk:** Free Edition · **Add-on:** v5.0.0  
 > **Status:** ✅ Completed Successfully — April 2026
-
+[View my HTML page] (https://arturskaufmanis.github.io/Splunk-Add-on-for-Sysmon-Homelab-Setup-Guide/splunk-sysmon-homelab.html)
 ---
 
 ## 📋 Table of Contents
